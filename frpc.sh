@@ -1,22 +1,19 @@
 #!/bin/bash
 
-# usage: sudo bash frpc.sh -server 47.98.245.236 -port 7000 -version 0.58.1 -proxy https://mirror.ghproxy.com
-
 # Parse input arguments
 while [[ "$#" -gt 0 ]]; do
     case $1 in
-        -server) serverAddr="$2"; shift ;;
-        -port) serverPort="$2"; shift ;;
+        -server) server_addr="$2"; shift ;;
+        -port) server_port="$2"; shift ;;
         -version) frp_version="$2"; shift ;;
-        -proxy) proxy_url="$2"; shift ;;
         *) echo "Unknown parameter passed: $1"; exit 1 ;;
     esac
     shift
 done
 
 # Check
-if [[ -z "$serverAddr" || -z "$serverPort" || -z "$frp_version" ]]; then
-    echo "Usage: $0 -server x.x.x.x -port xxxx -version x.x.x -proxy x.x.x.x"
+if [[ -z "$server_addr" || -z "$server_port" || -z "$frp_version" ]]; then
+    echo "Usage: $0 -server x.x.x.x -port xxxx -version x.x.x"
     exit 1
 fi
 
@@ -31,7 +28,11 @@ config_path="${user_home}/.config/frp"
 
 
 download_filename="frp_${frp_version}_linux_amd64"
-download_url=${proxy_url}/https://github.com/fatedier/frp/releases/download/v${frp_version}/${download_filename}.tar.gz
+if [[ -n "$proxy_url" ]]; then
+    download_url=${proxy_url}/https://github.com/fatedier/frp/releases/download/v${frp_version}/${download_filename}.tar.gz
+else 
+    download_url=https://github.com/fatedier/frp/releases/download/v${frp_version}/${download_filename}.tar.gz
+fi 
 
 # download and set
 wget --no-check-certificate -c ${download_url}
@@ -39,8 +40,8 @@ tar zxvf ${download_filename}.tar.gz
 mkdir -p ${config_path}
 
 # config file
-echo "serverAddr = \"${serverAddr}\"" > ${download_filename}/frpc.toml
-echo "serverPort = ${serverPort}" >> ${download_filename}/frpc.toml
+echo "serverAddr = \"${server_addr}\"" > ${download_filename}/frpc.toml
+echo "serverPort = ${server_port}" >> ${download_filename}/frpc.toml
 
 echo "  " >> ${download_filename}/frpc.toml
 echo "[[proxies]]" >> ${download_filename}/frpc.toml

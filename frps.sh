@@ -1,13 +1,10 @@
 #!/bin/bash
 
-# usage: sudo bash frps.sh -port 7000 -version 0.58.1 -proxy https://mirror.ghproxy.com
-
 # Parse input arguments
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         -port) port="$2"; shift ;;
         -version) frp_version="$2"; shift ;;
-        -proxy) proxy_url="$2"; shift ;;
         *) echo "Unknown parameter passed: $1"; exit 1 ;;
     esac
     shift
@@ -15,7 +12,7 @@ done
 
 # Check
 if [[ -z "$port" || -z "$frp_version" ]]; then
-    echo "Usage: $0 -port xxxx -version x.x.x -proxy x.x.x.x"
+    echo "Usage: $0 -port xxxx -version x.x.x"
     exit 1
 fi
 
@@ -29,7 +26,11 @@ bin_path="/usr/bin"
 config_path="${user_home}/.config/frp"
 
 download_filename="frp_${frp_version}_linux_amd64"
-download_url=${proxy_url}/https://github.com/fatedier/frp/releases/download/v${frp_version}/${download_filename}.tar.gz
+if [[ -n "$proxy_url" ]]; then
+    download_url=${proxy_url}/https://github.com/fatedier/frp/releases/download/v${frp_version}/${download_filename}.tar.gz
+else 
+    download_url=https://github.com/fatedier/frp/releases/download/v${frp_version}/${download_filename}.tar.gz
+fi 
 
 
 # download and set
