@@ -32,31 +32,37 @@ else
     download_url=https://github.com/fatedier/frp/releases/download/v${frp_version}/${download_filename}.tar.gz
 fi 
 
-
-# download and set
+# Download and set
 wget --no-check-certificate -c ${download_url}
 tar zxvf ${download_filename}.tar.gz
 mkdir -p ${config_path}
 
+# Config file
+cat <<EOF > ${download_filename}/frps.toml
+bindPort = ${port}
+EOF
 
-# config file
-echo "bindPort = {$port}" > ${download_filename}/frps.toml
+# systemd service file
+cat <<EOF | sudo tee /etc/systemd/system/frps.service > /dev/null
+[Unit]
+Description = frp server
+After = network.target syslog.target
+Wants = network.target
 
-# systemctl
-touch frps.service
-echo "[Unit]" > frps.service
-echo "Description = frp server" >> frps.service
-echo "After = network.target syslog.target" >> frps.service
-echo "Wants = network.target" >> frps.service
-echo "[Service]" >> frps.service
-echo "Type = simple" >>frps.service
-echo "ExecStart = ${bin_path}/frps -c ${config_path}/frps.toml" >> frps.service
-echo "Restart=always" >> frps.service
-echo "RestartSec=2" >> frps.service
-echo "[Install]" >> frps.service
-echo "WantedBy = multi-user.target" >> frps.service
-sudo mv frps.service /etc/systemd/system
+[Service]
+Type = simple
+ExecStart = ${bin_path}/frps -c ${config_path}/frps.toml
+Restart=always
+RestartSec=2
 
+[Install]
+WantedBy = multi-user.target
+EOF
+
+# Move executable and start service
+sudo cp ${download_filename}/frps ${bin_path}
+sudo cp ${download_filename}/frps.toml ${config_path}
+rm -rf ${download_filename}*
 
 sudo systemctl start frps
 sudo systemctl enable frps

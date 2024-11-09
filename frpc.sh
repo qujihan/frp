@@ -26,7 +26,6 @@ fi
 bin_path="/usr/bin"
 config_path="${user_home}/.config/frp"
 
-
 download_filename="frp_${frp_version}_linux_amd64"
 if [[ -n "$proxy_url" ]]; then
     download_url=${proxy_url}/https://github.com/fatedier/frp/releases/download/v${frp_version}/${download_filename}.tar.gz
@@ -40,43 +39,45 @@ tar zxvf ${download_filename}.tar.gz
 mkdir -p ${config_path}
 
 # config file
-echo "serverAddr = \"${server_addr}\"" > ${download_filename}/frpc.toml
-echo "serverPort = ${server_port}" >> ${download_filename}/frpc.toml
+cat <<EOF > ${download_filename}/frpc.toml
+serverAddr = "${server_addr}"
+serverPort = ${server_port}
 
-echo "  " >> ${download_filename}/frpc.toml
-echo "[[proxies]]" >> ${download_filename}/frpc.toml
-echo "name = \"rdp\"" >> ${download_filename}/frpc.toml
-echo "type = \"tcp\"" >> ${download_filename}/frpc.toml
-echo "localIP = \"127.0.0.1\"" >> ${download_filename}/frpc.toml
-echo "localPort = 3389" >> ${download_filename}/frpc.toml
-echo "remotePort = 20003" >> ${download_filename}/frpc.toml
+[[proxies]]
+name = "rdp"
+type = "tcp"
+localIP = "127.0.0.1"
+localPort = 3389
+remotePort = 20003
 
-echo "  " >> ${download_filename}/frpc.toml
-echo "[[proxies]]" >> ${download_filename}/frpc.toml
-echo "name = \"ubuntu_ssh\"" >> ${download_filename}/frpc.toml
-echo "type = \"tcp\"" >> ${download_filename}/frpc.toml
-echo "localIP = \"127.0.0.1\"" >> ${download_filename}/frpc.toml
-echo "localPort = 22" >> ${download_filename}/frpc.toml
-echo "remotePort = 20004" >> ${download_filename}/frpc.toml
+[[proxies]]
+name = "ubuntu_ssh"
+type = "tcp"
+localIP = "127.0.0.1"
+localPort = 22
+remotePort = 20004
+EOF
 
 sudo cp ${download_filename}/frpc ${bin_path}
 sudo cp ${download_filename}/frpc.toml ${config_path}
 rm -rf ${download_filename}*
 
 # systemctl
-touch frpc.service
-echo "[Unit]" > frpc.service
-echo "Description = frp client" >> frpc.service
-echo "After = network.target syslog.target" >> frpc.service
-echo "Wants = network.target" >> frpc.service
-echo "[Service]" >> frpc.service
-echo "Type = simple" >>frpc.service
-echo "ExecStart = ${bin_path}/frpc -c ${config_path}/frpc.toml" >> frpc.service
-echo "Restart=always" >> frpc.service
-echo "RestartSec=2" >> frpc.service
-echo "[Install]" >> frpc.service
-echo "WantedBy = multi-user.target" >> frpc.service
-sudo mv frpc.service /etc/systemd/system
+cat <<EOF | sudo tee /etc/systemd/system/frpc.service > /dev/null
+[Unit]
+Description = frp client
+After = network.target syslog.target
+Wants = network.target
+
+[Service]
+Type = simple
+ExecStart = ${bin_path}/frpc -c ${config_path}/frpc.toml
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy = multi-user.target
+EOF
 
 sudo systemctl start frpc
 sudo systemctl enable frpc
